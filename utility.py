@@ -78,7 +78,7 @@ def gasp(geometry, kwargs, aff):
                                      superpixel_generator=None,
                                      run_GASP_kwargs=kwargs)
     segmentation, runtime, data = gasp_instance(aff)
-    return segmentation, runtime, data[0], data[1]
+    return segmentation, runtime, data[0], data[1], data[2]
 
 def get_subset(z,x,y):
     start_x = np.random.randint(low=0, high=430-x)
