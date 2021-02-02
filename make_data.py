@@ -42,19 +42,22 @@ for iter in range(iterations):
             EdgeName = linkage_criteria + str(add_cannot_link_constraints) + 'Dice' + 'Edge'
             NodeName = linkage_criteria + str(add_cannot_link_constraints) + 'Dice' + 'Node'
             ActionName = linkage_criteria + str(add_cannot_link_constraints) + 'Dice' + 'Action'
+            SegmentationName = linkage_criteria + str(add_cannot_link_constraints) + 'Dice' + 'Segmentation'
             statistics[EdgeName] = edgeData
             statistics[NodeName] = nodeData
             statistics[ActionName] = action
+            statistics[SegmentationName] = segmentation
 
             segmentation, runtime, nodeData, edgeData, action = utility.gasp(mask_average_geometry, run_GASP_kwargs, mask_avg_aff_small)
 
             EdgeName = linkage_criteria + str(add_cannot_link_constraints) + 'Mask' + 'Edge'
             NodeName = linkage_criteria + str(add_cannot_link_constraints) + 'Mask' + 'Node'
             ActionName = linkage_criteria + str(add_cannot_link_constraints) + 'Mask' + 'Action'
+            SegmentationName = linkage_criteria + str(add_cannot_link_constraints) + 'Mask' + 'Segmentation'
             statistics[EdgeName] = edgeData
             statistics[NodeName] = nodeData
             statistics[ActionName] = action
-
+            statistics[SegmentationName] = segmentation
 
     filename='gasp_statistics_'+str(iter)
     np.savez(filename, dict=statistics)

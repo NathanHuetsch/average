@@ -5,46 +5,104 @@ import utility
 import matplotlib
 # matplotlib.use('module://backend_interagg')
 
-# read in data sets
-path = '/home/nhuetsch/Desktop/Data/cremi2012/crop_maskEmb_affs_cremi_val_sample_C.h5'
-raw, gt, mws_seg = utility.get_cremi_images(path, True)
-dice_aff = utility.get_cremi_aff(path, 'dice')
-mask_avg_aff = utility.get_cremi_aff(path, 'mask_average')
+data_folder = '/home/nhuetsch/Desktop/Data/average/'
+number_of_experiments = 3
+paths_of_experiments = []
+for i in range(number_of_experiments):
+    path = data_folder + 'gasp_statistics_' + str(i) + '.npz'
+    paths_of_experiments.append(path)
 
-# read in geometries
-dice_geometry = utility.get_dice_geometry()
-mask_avg_geometry = utility.get_mask_avg_geometry()
+for path in paths_of_experiments:
+    dict = one = np.load(path, allow_pickle=True)['dict'].item()
 
-z1, z2, x1, x2, y1, y2 = utility.get_subset(5, 150, 150)
-raw_small = raw[z1:z2, x1:x2, y1:y2]
-gt_small = gt[z1:z2, x1:x2, y1:y2]
-dice_aff_small = dice_aff[:, z1:z2, x1:x2, y1:y2]
-mask_avg_aff_small = mask_avg_aff[:, z1:z2, x1:x2, y1:y2]
 
-########################
-
-run_GASP_kwargs = {'linkage_criteria': 'avg',
-                   'add_cannot_link_constraints': True}
-dic_avg_True = {}
-dic_avg_True['segmentation'], dic_avg_True['runtime'], \
-dic_avg_True['nodeData'], dic_avg_True['edgeData'], dic_avg_True['action'] \
-= utility.gasp(dice_geometry, run_GASP_kwargs, dice_aff_small)
-
-nodeOne = dic_avg_True['action'][:,0]
-nodeTwo = dic_avg_True['action'][:,1]
-edge = dic_avg_True['action'][:,2]
-priority = dic_avg_True['action'][:,3]
-action = dic_avg_True['action'][:,4]
+nodeOne = dict['avgTrueDiceAction'][:,0]
+nodeTwo = dict['avgTrueDiceAction'][:,1]
+status = dict['avgTrueDiceAction'][:,2]
+priority = dict['avgTrueDiceAction'][:,3]
+action = dict['avgTrueDiceAction'][:,4]
+segmentation = dict['avgTrueDiceSegmentation'].reshape((10,250,250))
 
 moves = len(nodeOne)
-frames = 1000
+frames = 200
 movesPerFrame = int(moves/frames)
-images = []
+
+img_skips = []
+imglist_skips = []
+img_constraints = []
+imglist_constraints = []
+img_merges = []
+imglist_merges = []
+
+skips = np.zeros((10 * 250 * 250))
+constraints = np.zeros((10 * 250 * 250))
+merges = np.zeros((10 * 250 * 250))
 
 for i in range(frames):
+
     low  = i*movesPerFrame
     high = (i+1)*movesPerFrame
 
-    nodeOne = dic_avg_True['action'][low:high, 0]
-    nodeTwo = dic_avg_True['action'][low:high, 1]
-    action = dic_avg_True['action'][low:high, 4]
+    for j in range(movesPerFrame):
+
+        n = low + j
+        one = int(nodeOne[n])
+        two = int(nodeTwo[n])
+        if action[n] == 1:
+            skips[one] = 1
+            skips[two] = 1
+        if action[n] == 2:
+            constraints[one] = 2
+            constraints[two] = 2
+        if action[n] == 3:
+            merges[one] = 3
+            merges[two] = 3
+
+    img_skips.append(skips.copy().reshape((10,250,250)))
+    img_constraints.append(constraints.copy().reshape((10,250,250)))
+    img_merges.append(merges.copy().reshape((10,250,250)))
+
+fig = plt.figure(1, constrained_layout = True)
+fig.patch.set_facecolor('black')
+fig.set_size_inches(4.8, 4.8)
+plt.axis("off")
+for i in range(frames):
+    imglist_skips.append([plt.imshow(img_skips[i][0]),])
+skips_ani = animation.ArtistAnimation(
+        fig, imglist_skips, interval=300, repeat_delay=3000, blit=True)
+skips_ani.save('videos/skips20.gif')
+del fig
+
+fig = plt.figure(2, constrained_layout = True)
+fig.patch.set_facecolor('black')
+fig.set_size_inches(4.8, 4.8)
+plt.axis("off")
+for i in range(frames):
+    imglist_constraints.append([plt.imshow(img_constraints[i][0]),])
+constraints_ani = animation.ArtistAnimation(
+        fig, imglist_constraints, interval=300, repeat_delay=3000, blit=True)
+constraints_ani.save('videos/constraints20.gif')
+del fig
+
+fig = plt.figure(3, constrained_layout = True)
+fig.patch.set_facecolor('black')
+fig.set_size_inches(4.8, 4.8)
+plt.axis("off")
+for i in range(frames):
+    imglist_merges.append([plt.imshow(img_merges[i][0]),])
+    path = 'merge_images20/' + str(i) + '.png'
+    plt.imsave(path, img_merges[i][7])
+merges_ani = animation.ArtistAnimation(
+        fig, imglist_merges, interval=300, repeat_delay=3000, blit=True)
+merges_ani.save('videos/merges20.gif')
+
+'''
+plt.imshow(img_skips[-1][0])
+plt.show()
+plt.imshow(img_constraints[-1][0])
+plt.show()
+plt.imshow(img_merges[-1][0])
+plt.show()
+plt.imshow(segmentation[0])
+plt.show()
+'''
